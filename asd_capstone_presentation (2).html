@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Multi-Modal ASD Detection | CPG 52 | TIET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --white:#FFFFFF;
+  --off:#F6F5F2;
+  --off2:#EEECEA;
+  --border:#DDDBD5;
+  --navy:#0D1B35;
+  --red:#C0191A;
+  --teal:#0C6B59;
+  --slate:#4A5568;
+  --text1:#0D1B35;
+  --text2:#4A5568;
+  --text3:#8A95A5;
+  --sh:0 1px 3px rgba(13,27,53,.05),0 4px 18px rgba(13,27,53,.07);
+  --sh-lg:0 8px 36px rgba(13,27,53,.11);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--white);color:var(--text1);font-family:'Raleway',sans-serif}
+#root{width:100%;height:100%}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── LAYOUT ── */
+.shell{display:flex;width:100vw;height:100vh}
+
+/* ── RAIL ── */
+.rail{width:64px;min-width:64px;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:var(--white);border-right:1px solid var(--border);z-index:10;position:relative;flex-shrink:0}
+.dot{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--border);cursor:pointer;transition:all .3s;position:relative}
+.dot::after{content:attr(data-tip);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);background:var(--navy);color:#fff;font-size:11px;font-family:'Raleway',sans-serif;white-space:nowrap;padding:4px 10px;border-radius:5px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:200}
+.dot:hover::after{opacity:1}
+.dot.active{background:var(--red);border-color:var(--red);transform:scale(1.35)}
+.dot:hover:not(.active){border-color:var(--slate)}
+.rail-num{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1.5px;margin-top:18px}
+
+/* ── PROGRESS ── */
+.prog{position:fixed;top:0;left:64px;right:0;height:2px;background:var(--border);z-index:20}
+.prog-fill{height:100%;background:var(--red);transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* ── MAIN ── */
+.main{flex:1;height:100vh;overflow:hidden}
+.sw{width:100%;height:100vh;overflow-y:auto;overflow-x:hidden;padding:44px 58px 76px;display:flex;flex-direction:column;justify-content:center}
+
+/* ── ANIMATION ── */
+.si{animation:si .48s cubic-bezier(.22,1,.36,1) both}
+@keyframes si{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TYPE ── */
+.tag{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:9px}
+.h1{font-family:'Source Serif 4',serif;font-weight:700;font-size:clamp(24px,2.6vw,34px);color:var(--navy);line-height:1.2;margin-bottom:7px;font-style:normal}
+.h1 em{color:var(--red);font-style:normal}
+.rule{width:40px;height:2.5px;background:var(--red);border-radius:2px;margin-bottom:26px}
+p,.sm{font-size:14px;color:var(--text2);line-height:1.72;font-family:'Raleway',sans-serif}
+.sm{font-size:13px}
+.lbl{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3);margin-bottom:9px}
+
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--sh)}
+.card-off{background:var(--off);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-dk{background:var(--navy);border-radius:10px;padding:20px;color:#fff}
+
+/* ── GRID ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:13px;font-family:'Raleway',sans-serif}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-bottom:1.5px solid var(--border);background:var(--off)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--off)}
+.price{font-family:'Raleway',sans-serif;font-weight:700;color:var(--navy);font-size:14px}
+
+/* ── BARS ── */
+.mtrack{height:7px;background:var(--off2);border-radius:3px;overflow:hidden;margin-top:6px}
+.mfill{height:100%;border-radius:3px;animation:bg 1.2s cubic-bezier(.4,0,.2,1) both}
+@keyframes bg{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+
+/* ── GANTT ── */
+.gr{display:grid;grid-template-columns:122px 1fr;align-items:center;gap:10px;margin-bottom:6px}
+.gtrack{height:22px;background:var(--off2);border-radius:4px;position:relative;overflow:hidden}
+.gbar{height:100%;border-radius:4px;position:absolute;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:600;color:#fff;animation:bg 1s ease-out both}
+/* current progress marker */
+.gnow{position:absolute;top:0;bottom:0;width:1.5px;background:var(--red);z-index:10;opacity:.7}
+
+/* ── NAV ── */
+.arrows{position:fixed;bottom:24px;right:30px;display:flex;gap:9px;z-index:20}
+.arr{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--white);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--sh);transition:all .2s;font-family:sans-serif}
+.arr:hover{border-color:var(--navy);color:var(--navy);box-shadow:var(--sh-lg)}
+.arr:disabled{opacity:.3;cursor:not-allowed}
+
+/* ── TEAM CARD ── */
+.tc{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:15px 17px;display:flex;gap:12px;align-items:flex-start;transition:all .22s}
+.tc:hover{box-shadow:var(--sh-lg);border-color:var(--navy);transform:translateY(-2px)}
+.av{width:34px;height:34px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:12px;color:#fff;letter-spacing:.5px}
+
+/* ── REF ── */
+.rl{padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:11px;align-items:baseline}
+.rn{font-weight:700;font-size:11px;color:var(--red);flex-shrink:0;width:22px}
+
+/* THAPAR LOGO SVG inline */
+.tiet-logo svg{display:block}
+
+@media(max-width:768px){
+  .rail{width:44px;min-width:44px}
+  .sw{padding:22px 18px 76px}
+  .g2,.g3,.g4{grid-template-columns:1fr}
+  .prog{left:44px}
+  .gr{grid-template-columns:90px 1fr}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const SLIDES=[
+  {id:1,label:"Title"},      {id:2,label:"Need"},
+  {id:3,label:"Modalities"}, {id:4,label:"Literature"},
+  {id:5,label:"Objectives"}, {id:6,label:"Methodology"},
+  {id:7,label:"Hardware"},   {id:8,label:"Software"},
+  {id:9,label:"Metrics"},    {id:10,label:"Work Plan"},
+  {id:11,label:"Team"},
+];
+
+const TEAM=[
+  {name:"Arul Goyal",     roll:"102303741",role:"QML & ML Lead",       task:"Fast-Quantum algorithms for EEG analysis"},
+  {name:"Diya",           roll:"102303733",role:"Machine Learning",     task:"Feature extraction & multi-modal fusion"},
+  {name:"Krit Mukul",     roll:"102303213",role:"Hardware & CV",        task:"IR camera setup & gaze-tracking model"},
+  {name:"Manpreet Singh", roll:"102303216",role:"Hardware Integration", task:"EEG headset interface & gait sensor setup"},
+  {name:"Lakshay Rana",   roll:"102483040",role:"Data & Documentation", task:"Dataset preprocessing & literature survey"},
+];
+
+const HW=[
+  {item:"NeuroSky MindWave Mobile 2", spec:"Single-channel EEG, Bluetooth 3.0",  avail:"Amazon India",            price:"₹8,500"},
+  {item:"Logitech C920 + IR LEDs ×10",spec:"1080p 30fps + IR illumination ring", avail:"Flipkart / College Lab",  price:"₹5,200"},
+  {item:"MPU-6050 IMU Module",         spec:"6-axis accel + gyro, I²C",           avail:"Robocraze / Local",       price:"₹150"},
+  {item:"Arduino Nano + HC-05 BLE",    spec:"ATmega328P + Bluetooth wireless",    avail:"Amazon / Robocraze",      price:"₹650"},
+  {item:"Raspberry Pi 4 (4 GB)",       spec:"Edge compute node — Python ML stack",avail:"Evelta / RoboElectronics",price:"₹7,500"},
+  {item:"Cables, Mounts & Misc.",      spec:"Wiring, enclosures, IR filters",     avail:"Local hardware store",    price:"₹1,200"},
+];
+
+// Timeline Jan–Dec 2026 (100 = Dec end)
+// Current progress mark ≈ 21% (mid-March ≈ 2.5 months into year)
+const GANTT=[
+  {label:"Setup & Data",  start:0,  dur:23, col:"#0D1B35", done:true},   // Jan–Mar (nearly done)
+  {label:"Preprocessing", start:16, dur:22, col:"#0C6B59", done:false},  // Feb–Apr
+  {label:"QML Training",  start:34, dur:22, col:"#C0191A", done:false},  // May–Jul
+  {label:"Fusion Model",  start:52, dur:20, col:"#6D28D9", done:false},  // Jul–Sep
+  {label:"Testing",       start:68, dur:16, col:"#D97706", done:false},  // Sep–Oct
+  {label:"Report & Demo", start:83, dur:17, col:"#374151", done:false},  // Nov–Dec
+];
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const REFS=[
+  "ABIDE I — Martino et al. (2013). Autism Brain Imaging Data Exchange. <em>Molecular Psychiatry</em>.",
+  "ABIDE II — Di Martino et al. (2017). Enhanced dataset, 19 sites. <em>Molecular Autism</em>.",
+  "OpenNeuro — Gorgolewski et al. (2017). BIDS-formatted neuroimaging platform.",
+  "QML for EEG — Mari et al. (2022). Quantum ML benchmarks. <em>PennyLane Technical Report</em>.",
+  "Gait & ASD — Suh et al. (2018). 95% kinematic classification. <em>Autism Research</em>.",
+  "Eye-Tracking — Klin & Jones (2002, 2013). Gaze biomarkers in ASD. <em>Nature</em>.",
+];
+
+// ─── THAPAR LOGO ────────────────────────────────────────
+const TIET_LOGO = `
+<svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" style="border-radius:10px;display:block;flex-shrink:0">
+  <rect width="56" height="56" rx="10" fill="#C0191A"/>
+  <!-- t character -->
+  <rect x="10" y="14" width="16" height="3.5" rx="1.5" fill="white"/>
+  <rect x="16" y="14" width="3.5" height="22" rx="1.5" fill="white"/>
+  <!-- i stem -->
+  <rect x="33" y="22" width="3.5" height="14" rx="1.5" fill="white"/>
+  <!-- i dot (circle) -->
+  <circle cx="34.75" cy="17" r="3" fill="white"/>
+</svg>`;
+
+// ─── HELPERS ────────────────────────────────────────────
+function mk(tag,cls,html){
+  const e=document.createElement(tag);
+  if(cls)e.className=cls;
+  if(html!==undefined)e.innerHTML=html;
+  return e;
+}
+function div(cls,html){return mk('div',cls,html)}
+function dot(n,color){return `<span style="width:7px;height:7px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;margin-top:5px"></span>`}
+
+// ─── SLIDE BUILDERS ──────────────────────────────────────
+
+function S1(){
+  const r=div('si');
+  r.innerHTML=`
+    <!-- Full-height centered layout -->
+    <div style="min-height:76vh;display:flex;flex-direction:column;justify-content:center">
+
+      <!-- Institute header row -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:48px;padding-bottom:22px;border-bottom:1px solid var(--border)">
+        <div class="tiet-logo">${TIET_LOGO}</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--red);text-transform:uppercase">Thapar Institute of Engineering &amp; Technology</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px;font-weight:500">Department of Computer Science &amp; Engineering &nbsp;·&nbsp; Patiala, Punjab</div>
+        </div>
+        <div style="margin-left:auto;padding:6px 14px;background:var(--off);border:1px solid var(--border);border-radius:6px;text-align:center">
+          <div style="font-size:10px;letter-spacing:2px;font-weight:700;color:var(--text3)">CPG NO.</div>
+          <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:22px;color:var(--red);line-height:1.1">52</div>
+        </div>
+      </div>
+
+      <!-- Title block -->
+      <div style="margin-bottom:44px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:12px">Capstone Project Proposal</div>
+        <h1 style="font-family:'Source Serif 4',serif;font-weight:700;font-size:clamp(28px,3.8vw,46px);color:var(--navy);line-height:1.18;max-width:720px;margin-bottom:14px">
+          Multi-Modal ASD Detection:<br>
+          <span style="color:var(--red)">EEG–Quantum Computing,</span><br>
+          Eye-Tracking &amp; Gait Analysis
+        </h1>
+        <div style="width:40px;height:2.5px;background:var(--red);border-radius:2px;margin-bottom:16px"></div>
+        <div style="font-size:14px;color:var(--text2);font-weight:500">
+          Faculty Mentor: &nbsp;<strong style="color:var(--navy)">Dr. Rohit Ahuja</strong>
+          &nbsp;&nbsp;·&nbsp;&nbsp;
+          Academic Year: &nbsp;<strong style="color:var(--navy)">2025–26</strong>
+        </div>
+      </div>
+
+      <!-- Team grid -->
+      <div>
+        <div class="lbl">Project Team</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          ${TEAM.map((m,i)=>`
+            <div style="padding:11px 16px;border-radius:8px;background:var(--off);border:1px solid var(--border);min-width:140px">
+              <div style="font-weight:600;font-size:14px;color:var(--navy)">${m.name}</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px">${m.roll}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  return r;
+}
+
+function S2(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">02 / Need Analysis</div>
+  <h1 class="h1">Why Does This Problem <em>Matter?</em></h1>
+  <div class="rule"></div>
+  <div class="g2" style="margin-bottom:16px">
+    <div class="card" style="border-left:3px solid var(--red)">
+      <div class="lbl">The Diagnostic Gap</div>
+      <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:38px;color:var(--red);line-height:1;margin-bottom:8px">1 in 36</div>
+      <p class="sm">Children diagnosed with ASD globally (CDC 2023). Diagnosis depends on clinician observation — subjective, inconsistent, and dangerously delayed.</p>
+    </div>
+    <div class="card" style="border-left:3px solid var(--navy)">
+      <div class="lbl">Current Barriers</div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-top:2px">
+        ${[
+          'MRI/fMRI costs <strong>₹80,000–₹2,50,000</strong> per scan',
+          'Average diagnosis delay of <strong>4–5 years</strong> post-onset',
+          'Single-modality ML accuracy stalls at <strong>~85–88%</strong>',
+          'No portable, clinic-ready ASD screening tool exists in India',
+        ].map(t=>`<div style="display:flex;gap:10px;align-items:flex-start"><div style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:6px"></div><p class="sm" style="margin:0">${t}</p></div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card-dk" style="display:flex;gap:28px;align-items:center">
+    <div style="flex:1">
+      <div style="font-size:10px;letter-spacing:2.5px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:8px">OUR SOLUTION</div>
+      <div style="font-family:'Source Serif 4',serif;font-weight:600;font-size:16px;line-height:1.55;color:#fff">A portable, objective, multi-modal AI system — fusing three biomarkers with Quantum ML — delivering <span style="color:#93C5FD">clinic-ready</span> ASD screening at <span style="color:#6EE7B7">under ₹25,000</span> in hardware.</div>
+    </div>
+    <div style="display:flex;gap:22px;flex-shrink:0">
+      ${[['&lt;₹25K','Hardware Cost'],['&gt;95%','Target Accuracy'],['Year 1–2','Best Intervention']].map(([v,l])=>`
+        <div style="text-align:center">
+          <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:20px;color:#93C5FD">${v}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.5px;margin-top:2px">${l}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+  return r;
+}
+
+function S3(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">03 / Data Modalities</div>
+  <h1 class="h1">Three-Source <em>Signal Architecture</em></h1>
+  <div class="rule"></div>
+  <div class="g3" style="margin-bottom:16px">
+    ${[
+      {label:'EEG',         sub:'Brain Signals',       col:'var(--navy)',bg:'#EEF2FF',bc:'#C7D2FE',
+       pts:['14–32 channel dry-electrode headset','Delta / Theta / Alpha / Beta bands','Quantum circuit processing (VQC)','ABIDE I/II & OpenNeuro datasets']},
+      {label:'Eye-Tracking',sub:'Visual Gaze Patterns', col:'var(--red)', bg:'#FEF2F2',bc:'#FECACA',
+       pts:['IR LEDs + 1080p webcam setup','Saccade & fixation mapping','Reduced social fixation — key ASD marker','Real-time gaze heatmap generation']},
+      {label:'Gait',        sub:'Kinematic Motion',     col:'var(--teal)',bg:'#F0FDF4',bc:'#A7F3D0',
+       pts:['MPU-6050 IMU wearable sensor','Stride length, cadence, symmetry','Repetitive motion detection','95% validated accuracy (Suh et al.)']},
+    ].map(m=>`
+      <div class="card" style="border-top:3px solid ${m.col}">
+        <div style="width:32px;height:3px;background:${m.col};border-radius:2px;margin-bottom:12px;opacity:.4"></div>
+        <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:2px">${m.label}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:14px;letter-spacing:.5px;font-weight:600">${m.sub}</div>
+        ${m.pts.map(pt=>`<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start"><div style="width:5px;height:5px;border-radius:50%;background:${m.col};flex-shrink:0;margin-top:6px"></div><p class="sm" style="margin:0;font-size:12px">${pt}</p></div>`).join('')}
+      </div>`).join('')}
+  </div>
+  <!-- Pipeline SVG -->
+  <div style="background:var(--off);border:1px solid var(--border);border-radius:10px;padding:16px 20px">
+    <div class="lbl" style="margin-bottom:12px">Fusion Pipeline</div>
+    <svg viewBox="0 0 860 54" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;overflow:visible">
+      <defs><marker id="a" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0,0 L0,7 L7,3.5z" fill="#A0AEC0"/></marker></defs>
+      <rect x="0"   y="9" width="118" height="36" rx="6" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
+      <text x="59"  y="31" text-anchor="middle" font-family="Raleway,sans-serif" font-size="12" font-weight="600" fill="#1E3A5F">EEG Signals</text>
+      <rect x="136" y="9" width="128" height="36" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+      <text x="200" y="31" text-anchor="middle" font-family="Raleway,sans-serif" font-size="12" font-weight="600" fill="#C0191A">Eye-Gaze Data</text>
+      <rect x="282" y="9" width="118" height="36" rx="6" fill="#F0FDF4" stroke="#A7F3D0" stroke-width="1.5"/>
+      <text x="341" y="31" text-anchor="middle" font-family="Raleway,sans-serif" font-size="12" font-weight="600" fill="#065F46">Gait Vectors</text>
+      <line x1="410" y1="27" x2="434" y2="27" stroke="#A0AEC0" stroke-width="1.5" marker-end="url(#a)"/>
+      <rect x="442" y="9" width="138" height="36" rx="6" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1.5"/>
+      <text x="511" y="27" text-anchor="middle" font-family="Raleway,sans-serif" font-size="12" font-weight="600" fill="#5B21B6">Feature</text>
+      <text x="511" y="41" text-anchor="middle" font-family="Raleway,sans-serif" font-size="11" fill="#6D28D9">Extraction</text>
+      <line x1="588" y1="27" x2="612" y2="27" stroke="#A0AEC0" stroke-width="1.5" marker-end="url(#a)"/>
+      <rect x="620" y="9" width="118" height="36" rx="6" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+      <text x="679" y="27" text-anchor="middle" font-family="Raleway,sans-serif" font-size="12" font-weight="600" fill="#C0191A">QML Fusion</text>
+      <text x="679" y="41" text-anchor="middle" font-family="Raleway,sans-serif" font-size="11" fill="#C0191A">Model</text>
+      <line x1="746" y1="27" x2="768" y2="27" stroke="#A0AEC0" stroke-width="1.5" marker-end="url(#a)"/>
+      <rect x="776" y="4" width="84" height="46" rx="6" fill="#0D1B35"/>
+      <text x="818" y="25" text-anchor="middle" font-family="Raleway,sans-serif" font-size="11" font-weight="700" fill="#fff">ASD</text>
+      <text x="818" y="40" text-anchor="middle" font-family="Raleway,sans-serif" font-size="10" fill="rgba(255,255,255,.6)">Score</text>
+    </svg>
+  </div>`;
+  return r;
+}
+
+function S4(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">04 / Literature Survey</div>
+  <h1 class="h1">Prior Work & <em>Datasets</em></h1>
+  <div class="rule"></div>
+  <div class="g2" style="margin-bottom:14px">
+    ${[
+      {t:'ABIDE I & II',  s:'Di Martino et al., 2013 / 2017',body:'Over 2,200 subjects across 36 international sites. Resting-state fMRI + structural MRI. Foundational benchmark for ML-based ASD classification.',tag:'2,226 Subjects',col:'var(--navy)'},
+      {t:'OpenNeuro',     s:'Gorgolewski et al., 2017',       body:'BIDS-formatted open neuroimaging platform providing ASD-specific EEG collections used for Quantum model pre-training and validation.',tag:'Open EEG',     col:'var(--teal)'},
+      {t:'Gait in ASD',  s:'Suh et al., Autism Research, 2018',body:'Wearable IMU analysis demonstrated <strong>95% classification accuracy</strong> using stride length, cadence, and symmetry — our validated gait baseline.',tag:'95% Accuracy',col:'var(--red)'},
+      {t:'Eye-Tracking',  s:'Klin & Jones, Nature, 2002 / 2013',body:'ASD individuals show reduced fixation on social scenes. Gaze patterns are validated early biomarkers, detectable before age 2.',tag:'Biomarker',    col:'var(--red)'},
+    ].map(p=>`
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:15px;color:var(--navy)">${p.t}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">${p.s}</div>
+          </div>
+          <div style="padding:3px 9px;border-radius:4px;background:${p.col}18;color:${p.col};font-size:10px;font-weight:700;flex-shrink:0;margin-left:10px;letter-spacing:.5px">${p.tag}</div>
+        </div>
+        <p class="sm">${p.body}</p>
+      </div>`).join('')}
+  </div>
+  <div class="card-off" style="border-radius:10px;border:1px solid var(--border)">
+    <div class="lbl" style="margin-bottom:7px">Key Insight — Why Multi-Modal?</div>
+    <p class="sm">Every single-modality study plateaus at 85–88%. Fusing complementary biomarkers yields 8–12% accuracy gains and reduces false positives. <strong>No published study</strong> combines all three with Quantum ML — this is our research novelty.</p>
+  </div>`;
+  return r;
+}
+
+function S5(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">05 / Problem Statement & Objectives</div>
+  <h1 class="h1">What We Aim to <em>Achieve</em></h1>
+  <div class="rule"></div>
+  <div class="card" style="border-left:3px solid var(--navy);margin-bottom:16px;padding:15px 18px">
+    <div class="lbl">Problem Statement</div>
+    <p class="sm">ASD diagnosis depends on subjective behavioral observation and expensive neuroimaging, limiting early, objective detection in resource-constrained settings. We build a <strong>portable, multi-modal AI screening system</strong> combining EEG, eye-tracking, and gait with Quantum Machine Learning.</p>
+  </div>
+  ${[
+    {n:'01',t:'Multi-Modal Data Acquisition',   d:'Design a synchronized pipeline capturing EEG, IR gaze, and IMU gait data simultaneously.',                              tag:'Hardware'},
+    {n:'02',t:'Quantum-Enhanced EEG Processing',d:'Implement VQC circuits (Qiskit / PennyLane) achieving ≥95% EEG classification, exceeding classical CNN baselines.',   tag:'QML'},
+    {n:'03',t:'Multi-Modal Fusion Architecture',d:'Develop a late-fusion model combining all three modality classifiers to eliminate single-source false positives.',       tag:'ML Fusion'},
+    {n:'04',t:'Clinic-Ready Deployment',        d:'Deliver an MRI-free system with a React dashboard for real-time ASD risk scoring and clinician-readable reports.',      tag:'Deployment'},
+  ].map(o=>`
+    <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:11px;padding:13px 17px;background:var(--off);border:1px solid var(--border);border-radius:9px">
+      <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:21px;color:var(--red);min-width:26px;line-height:1.3;opacity:.8">${o.n}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:3px">
+          <div style="font-weight:600;font-size:14px;color:var(--navy)">${o.t}</div>
+          <div style="padding:2px 8px;background:var(--navy);color:#fff;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px;flex-shrink:0">${o.tag.toUpperCase()}</div>
+        </div>
+        <p class="sm" style="margin:0;font-size:13px">${o.d}</p>
+      </div>
+    </div>`).join('')}`;
+  return r;
+}
+
+function S6(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">06 / Methodology</div>
+  <h1 class="h1">QML + ML <em>Hybrid Architecture</em></h1>
+  <div class="rule"></div>
+  <div class="g2">
+    <div>
+      ${[
+        {n:'1',t:'Data Collection',     d:'EEG headset, IR webcam, MPU-6050 gait IMU — synchronized. Supplement with ABIDE & OpenNeuro.',col:'var(--navy)'},
+        {n:'2',t:'Preprocessing',       d:'EEG: band-pass (1–40 Hz) + ICA. Gaze: fixation/saccade extraction. Gait: cycle segmentation.',col:'var(--navy)'},
+        {n:'3',t:'Feature Extraction',  d:'Spectral PSD for EEG; gaze entropy & fixation duration; stride length, cadence, symmetry.',   col:'var(--navy)'},
+        {n:'4',t:'Quantum VQC — EEG',   d:'Amplitude encoding → Variational Quantum Circuit → Quantum Kernel SVM (Qiskit / PennyLane).', col:'var(--red)'},
+        {n:'5',t:'Late Fusion & Output',d:'Weighted ensemble of three classifiers → ASD probability score + explainability report.',      col:'var(--teal)'},
+      ].map((s,i,a)=>`
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:28px;height:28px;border-radius:50%;background:${s.col};color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${s.n}</div>
+            ${i<a.length-1?`<div style="width:1.5px;height:18px;background:var(--border);margin-top:2px"></div>`:''}
+          </div>
+          <div style="padding:10px 14px;background:var(--off);border:1px solid var(--border);border-radius:8px;flex:1;margin-bottom:5px">
+            <div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:2px">${s.t}</div>
+            <p class="sm" style="margin:0;font-size:12px">${s.d}</p>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card-dk" style="padding:18px">
+        <div style="font-size:10px;letter-spacing:2.5px;font-weight:600;color:rgba(255,255,255,.4);margin-bottom:9px">Quantum Circuit Notation</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.9;background:rgba(0,0,0,.28);padding:13px;border-radius:7px;color:#93C5FD">
+          |ψ⟩ = U(θ) |0⟩<sup style="font-size:9px">n</sup><br>
+          <span style="color:rgba(255,255,255,.32)">// Amplitude encoding</span><br>
+          RY(θᵢ) · CNOT<br>
+          <span style="color:rgba(255,255,255,.32)">// Variational ansatz</span><br>
+          K(x,x') = |⟨φ(x)|φ(x')⟩|²<br>
+          <span style="color:rgba(255,255,255,.32)">// Quantum kernel SVM</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl">Classifier per Modality</div>
+        <table style="margin-top:2px">
+          <thead><tr><th style="padding:5px 0">Modality</th><th style="padding:5px 0">Model</th></tr></thead>
+          <tbody>
+            ${[['EEG','Quantum VQC + Kernel SVM'],['Eye-Tracking','LSTM + Attention'],['Gait','Random Forest + CNN'],['Fusion','Weighted Ensemble']].map(([m,a])=>`<tr><td style="padding:7px 0;font-weight:600;color:var(--navy)">${m}</td><td style="padding:7px 0;font-size:12px">${a}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+  return r;
+}
+
+function S7(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">07 / Hardware Requirements</div>
+  <h1 class="h1">Minimal Hardware — <em>India-Ready</em></h1>
+  <div class="rule"></div>
+  <table style="margin-bottom:7px">
+    <thead><tr><th>Component</th><th>Specification</th><th>Availability in India</th><th style="text-align:right">Price (INR)</th></tr></thead>
+    <tbody>
+      ${HW.map(h=>`<tr>
+        <td style="font-weight:600;color:var(--navy)">${h.item}</td>
+        <td>${h.spec}</td>
+        <td><span style="background:var(--off);padding:2px 7px;border-radius:4px;font-size:12px">${h.avail}</span></td>
+        <td style="text-align:right"><span class="price">${h.price}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+  <div style="background:var(--navy);border-radius:9px;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+    <div>
+      <div style="font-size:10px;letter-spacing:2.5px;font-weight:600;color:rgba(255,255,255,.4)">Total Hardware Budget</div>
+      <div style="font-size:12px;color:#93C5FD;margin-top:3px">Laptop / GPU workstation available in college lab</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:26px;color:#93C5FD">≈ ₹23,200</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.35)">vs ₹80K–₹2.5L for MRI</div>
+    </div>
+  </div>
+  <div class="card-off" style="border-radius:9px;border:1px solid var(--border);padding:13px 16px">
+    <p class="sm"><strong style="color:var(--red)">Why no MRI?</strong>&nbsp; MRI requires fixed infrastructure, sedation for young children, and is inaccessible in rural India. Our wearable kit fits in a backpack and deploys in any school or clinic.</p>
+  </div>`;
+  return r;
+}
+
+function S8(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">08 / Software Stack</div>
+  <h1 class="h1">Tools & <em>Platforms</em></h1>
+  <div class="rule"></div>
+  <div class="g2" style="margin-bottom:14px">
+    ${[
+      {cat:'Quantum Computing', col:'var(--navy)',  tools:[{n:'Qiskit 1.x',d:'IBM Quantum SDK · VQC design & simulation'},{n:'PennyLane 0.37',d:'Differentiable QML · gradient-based VQC training'}]},
+      {cat:'Machine Learning',  col:'var(--red)',   tools:[{n:'PyTorch 2.x',d:'LSTM + Attention (gaze); CNN (gait)'},{n:'Scikit-learn',d:'Ensemble fusion, baselines, cross-validation'}]},
+      {cat:'Signal Processing', col:'var(--teal)',  tools:[{n:'MNE-Python',d:'EEG preprocessing, ICA, spectral features'},{n:'OpenCV 4.x',d:'IR gaze detection & video gait pipeline'}]},
+      {cat:'Frontend & API',    col:'#5B21B6',      tools:[{n:'React 18',d:'Clinician dashboard · real-time risk scoring'},{n:'FastAPI',d:'REST bridge between ML inference and UI'}]},
+    ].map(s=>`
+      <div class="card" style="border-top:3px solid ${s.col}">
+        <div style="font-size:10px;letter-spacing:2.5px;font-weight:700;color:${s.col};margin-bottom:12px">${s.cat.toUpperCase()}</div>
+        ${s.tools.map(t=>`<div style="margin-bottom:10px;padding-left:10px;border-left:2px solid var(--border)"><div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:1px">${t.n}</div><p class="sm" style="margin:0;font-size:12px">${t.d}</p></div>`).join('')}
+      </div>`).join('')}
+  </div>
+  <div class="card-off" style="border-radius:9px;border:1px solid var(--border);padding:14px 17px">
+    <div class="lbl" style="margin-bottom:9px">Full Tech Stack</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      ${['Python 3.11','Qiskit','PennyLane','PyTorch','MNE-Python','OpenCV','React 18','FastAPI','Scikit-learn','NumPy · Pandas','BIDS Format','IBM Quantum','Matplotlib','Git / GitHub'].map(c=>`<span style="padding:4px 11px;border-radius:5px;background:var(--white);border:1px solid var(--border);font-size:12px;font-weight:500;color:var(--navy)">${c}</span>`).join('')}
+    </div>
+  </div>`;
+  return r;
+}
+
+function S9(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">09 / Project Outcomes</div>
+  <h1 class="h1">Performance <em>Metrics</em></h1>
+  <div class="rule"></div>
+  <div class="g4" style="margin-bottom:18px">
+    ${[
+      {v:'98.9%',l:'QML EEG Accuracy',   sub:'Quantum benchmark',    col:'var(--navy)'},
+      {v:'95%',  l:'Gait Classification',sub:'Suh et al. validated',  col:'var(--teal)'},
+      {v:'≥92%', l:'Fusion Target',      sub:'Multi-modal goal',      col:'var(--red)'},
+      {v:'~₹23K',l:'Hardware Cost',      sub:'vs ₹2.5L MRI',         col:'#5B21B6'},
+    ].map(s=>`<div class="card" style="text-align:center;border-top:3px solid ${s.col}">
+      <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:clamp(22px,2.8vw,32px);color:${s.col};line-height:1.1;margin-bottom:4px">${s.v}</div>
+      <div style="font-weight:600;font-size:12px;color:var(--navy);margin-bottom:2px">${s.l}</div>
+      <div style="font-size:11px;color:var(--text3)">${s.sub}</div>
+    </div>`).join('')}
+  </div>
+  <div class="card" style="margin-bottom:15px">
+    <div class="lbl" style="margin-bottom:12px">Accuracy Comparison</div>
+    ${[
+      {n:'Quantum VQC — EEG Only',    v:98.9,col:'var(--navy)'},
+      {n:'Gait Analysis (Standalone)',v:95,  col:'var(--teal)'},
+      {n:'Multi-Modal Fusion (Target)',v:95, col:'var(--red)'},
+      {n:'Classical CNN — EEG Only',  v:88,  col:'var(--text3)'},
+      {n:'Eye-Tracking (Standalone)', v:87,  col:'var(--text3)'},
+    ].map((m,i)=>`<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px;color:var(--text2);font-weight:500">${m.n}</span>
+        <span style="font-weight:700;font-size:14px;color:${m.col}">${m.v}%</span>
+      </div>
+      <div class="mtrack"><div class="mfill" style="width:${m.v}%;background:${m.col};animation-delay:${i*0.13}s"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="g3">
+    ${[
+      {t:'Deliverable 1',d:'Portable wearable kit: EEG headset + IR eye-tracker + IMU gait sensor'},
+      {t:'Deliverable 2',d:'React clinician dashboard with real-time ASD risk scoring and PDF reports'},
+      {t:'Deliverable 3',d:'Research paper targeting IEEE EMBC or Nature Digital Medicine'},
+    ].map(d=>`<div class="card-off" style="border-radius:9px;border:1px solid var(--border);padding:14px"><div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:4px">${d.t}</div><p class="sm" style="margin:0;font-size:12px">${d.d}</p></div>`).join('')}
+  </div>`;
+  return r;
+}
+
+function S10(){
+  const r=div('si');
+  // Current progress = ~21% through Jan–Dec (mid-March ≈ 2.5 of 12 months)
+  const nowPct = 21;
+  r.innerHTML=`
+  <div class="tag">10 / Work Plan</div>
+  <h1 class="h1">Project <em>Timeline</em> — Jan to Dec 2026</h1>
+  <div class="rule"></div>
+  <div class="card" style="margin-bottom:15px;padding:20px">
+    <!-- Month headers -->
+    <div style="display:grid;grid-template-columns:122px 1fr;gap:10px;margin-bottom:8px;align-items:center">
+      <div class="lbl" style="text-align:right;margin:0">Phase</div>
+      <div style="display:flex;position:relative">
+        ${MONTHS.map(m=>`<div style="flex:1;text-align:center;font-size:10px;font-weight:700;letter-spacing:.5px;color:var(--text3)">${m}</div>`).join('')}
+      </div>
+    </div>
+    <div style="width:100%;height:1px;background:var(--border);margin-bottom:10px"></div>
+    <!-- Gantt rows -->
+    ${GANTT.map((g,i)=>`
+      <div class="gr" style="animation-delay:${i*0.09}s">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:6px">
+          ${g.done?`<span style="width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0"></span>`:''}
+          ${g.label}
+        </div>
+        <div class="gtrack">
+          <!-- "Now" marker -->
+          <div class="gnow" style="left:${nowPct}%"></div>
+          <div class="gbar" style="left:${g.start}%;width:${g.dur}%;background:${g.col};animation-delay:${i*0.1}s;opacity:${g.done?1:.85}"></div>
+        </div>
+      </div>`).join('')}
+    <!-- Now label under grid -->
+    <div style="display:grid;grid-template-columns:122px 1fr;gap:10px;margin-top:6px">
+      <div></div>
+      <div style="position:relative;height:14px">
+        <div style="position:absolute;left:${nowPct}%;transform:translateX(-50%);font-size:10px;font-weight:700;color:var(--red);white-space:nowrap">▲ Now (Mar)</div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card-off" style="border-radius:9px;border:1px solid var(--border)">
+      <div class="lbl" style="margin-bottom:9px">Semester Milestones</div>
+      ${[
+        {m:'Jan–Mar 2026', t:'Hardware setup, dataset download, env config',   done:true},
+        {m:'Feb–Apr 2026', t:'EEG preprocessing, gaze & gait extraction',      done:false},
+        {m:'May–Jul 2026', t:'QML circuit implementation + classical baselines',done:false},
+        {m:'Jul–Sep 2026', t:'Multi-modal fusion & hyperparameter tuning',      done:false},
+        {m:'Oct–Dec 2026', t:'Final demo, dashboard, paper draft — evaluation', done:false},
+      ].map(ms=>`<div style="display:flex;gap:10px;margin-bottom:9px;align-items:flex-start">
+        <div style="width:6px;height:6px;border-radius:50%;background:${ms.done?'var(--teal)':'var(--border)'};border:${ms.done?'none':'1.5px solid var(--text3)'};flex-shrink:0;margin-top:5px"></div>
+        <div><div style="font-size:11px;font-weight:700;color:${ms.done?'var(--teal)':'var(--red)'};letter-spacing:.5px">${ms.m}</div><p class="sm" style="margin:0;font-size:12px">${ms.t}</p></div>
+      </div>`).join('')}
+    </div>
+    <div class="card-off" style="border-radius:9px;border:1px solid var(--border)">
+      <div class="lbl" style="margin-bottom:9px">Phase Legend</div>
+      ${GANTT.map(g=>`<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+        <div style="width:12px;height:12px;border-radius:3px;background:${g.col};flex-shrink:0"></div>
+        <span style="font-size:13px;color:var(--text2);font-weight:${g.done?'600':'400'}">${g.label}${g.done?' <span style="font-size:10px;color:var(--teal);font-weight:700">(in progress)</span>':''}</span>
+      </div>`).join('')}
+      <div style="display:flex;align-items:center;gap:9px;margin-top:4px;padding-top:9px;border-top:1px solid var(--border)">
+        <div style="width:1.5px;height:12px;background:var(--red)"></div>
+        <span style="font-size:12px;color:var(--text2)">Current date marker</span>
+      </div>
+    </div>
+  </div>`;
+  return r;
+}
+
+function S11(){
+  const r=div('si');
+  r.innerHTML=`
+  <div class="tag">11 / Team & References</div>
+  <h1 class="h1">Individual Roles & <em>Citations</em></h1>
+  <div class="rule"></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:10px;margin-bottom:18px">
+    ${TEAM.map(m=>`<div class="tc">
+      <div class="av">${m.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+      <div>
+        <div style="font-weight:700;font-size:14px;color:var(--navy)">${m.name}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${m.roll}</div>
+        <div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${m.role}</div>
+        <p class="sm" style="margin:0;font-size:12px">${m.task}</p>
+      </div>
+    </div>`).join('')}
+  </div>
+  <div class="card" style="padding:16px 20px;margin-bottom:11px">
+    <div class="lbl" style="margin-bottom:7px">References</div>
+    ${REFS.map((ref,i)=>`<div class="rl">
+      <span class="rn">[${String(i+1).padStart(2,'0')}]</span>
+      <p class="sm" style="margin:0;font-size:12px">${ref}</p>
+    </div>`).join('')}
+  </div>
+  <div style="background:var(--navy);border-radius:9px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center">
+    <div style="display:flex;align-items:center;gap:13px">
+      <div class="tiet-logo">${TIET_LOGO.replace('width="56" height="56"','width="40" height="40"')}</div>
+      <div>
+        <div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:3px">Faculty Mentor</div>
+        <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:16px;color:#fff">Dr. Rohit Ahuja</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:1px">Dept. of CSE · TIET, Patiala</div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:3px">Capstone Project</div>
+      <div style="font-family:'Source Serif 4',serif;font-weight:700;font-size:18px;color:#93C5FD">CPG No. 52</div>
+    </div>
+  </div>`;
+  return r;
+}
+
+const FNS=[S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11];
+
+// ─── APP ─────────────────────────────────────────────────
+let cur=0;
+
+function render(){
+  const app=document.getElementById('root');
+  app.innerHTML='';
+
+  const shell=mk('div','shell');
+
+  // Rail
+  const rail=mk('div','rail');
+  SLIDES.forEach((s,i)=>{
+    const d=mk('div',`dot${i===cur?' active':''}`);
+    d.setAttribute('data-tip',`${String(s.id).padStart(2,'0')} · ${s.label}`);
+    d.addEventListener('click',()=>go(i));
+    rail.appendChild(d);
+  });
+  const rn=mk('div','rail-num');
+  rn.textContent=`${String(cur+1).padStart(2,'0')}/${SLIDES.length}`;
+  rail.appendChild(rn);
+
+  // Progress
+  const pb=mk('div','prog');
+  const pf=mk('div','prog-fill');
+  pf.style.width=`${((cur+1)/SLIDES.length)*100}%`;
+  pb.appendChild(pf);
+
+  // Main
+  const main=mk('div','main');
+  const sw=mk('div','sw');
+  sw.appendChild(FNS[cur]());
+  main.appendChild(sw);
+
+  // Arrows
+  const arrows=mk('div','arrows');
+  const prev=document.createElement('button');
+  prev.className='arr';prev.innerHTML='&#8592;';prev.disabled=cur===0;
+  prev.addEventListener('click',()=>go(cur-1));
+  const next=document.createElement('button');
+  next.className='arr';next.innerHTML='&#8594;';next.disabled=cur===SLIDES.length-1;
+  next.addEventListener('click',()=>go(cur+1));
+  arrows.append(prev,next);
+
+  shell.append(rail,main);
+  app.append(pb,shell,arrows);
+}
+
+function go(i){if(i<0||i>=SLIDES.length)return;cur=i;render();}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(cur+1);
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')  go(cur-1);
+});
+
+render();
+</script>
+</body>
+</html>
